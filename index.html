@@ -17,15 +17,10 @@ nav{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) 
 nav a{flex:1;text-align:center;padding:13px 0;color:#8a8aa0;text-decoration:none;font-weight:600}nav a.on{color:#fff;text-shadow:0 0 12px #7C5CFF}
 </style></head><body><div id="v"><p class="sub">Loading…</p></div>
 <script>
-const KEYS='tk';let D;
-function key(){let m=location.hash.match(/k=([\w-]+)/);if(m){localStorage[KEYS]=m[1];return m[1]}return localStorage[KEYS]}
+let D;
 const e=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const tm=t=>new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}),dy=t=>new Date(t).toLocaleDateString([],{weekday:'short'});
-async function load(){const k=key();if(!k){v.innerHTML='<div class="card">Open this app from your private link once to unlock it.</div>';return}
-const b64=s=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')+'=='.slice(0,(4-s.length%4)%4)),c=>c.charCodeAt(0));
-try{const r=await fetch('data.enc?'+Date.now(),{cache:'no-store'});const raw=b64((await r.text()).trim());
-const ck=await crypto.subtle.importKey('raw',b64(k),'AES-GCM',false,['decrypt']);
-D=JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:raw.slice(0,12)},ck,raw.slice(12))));draw()}
+async function load(){try{const r=await fetch('data.json?'+Date.now(),{cache:'no-store'});D=await r.json();draw()}
 catch(x){v.innerHTML='<div class="card">Couldn\'t load your data ('+e(x.message||x)+').</div>'}}
 const sent=()=>JSON.parse(localStorage.sent||'{}');
 function draw(){
