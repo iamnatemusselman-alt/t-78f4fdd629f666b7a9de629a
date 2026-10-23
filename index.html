@@ -29,7 +29,7 @@ const ck=await crypto.subtle.importKey('raw',b64(k),'AES-GCM',false,['decrypt'])
 D=JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:raw.slice(0,12)},ck,raw.slice(12))));draw()}
 catch(x){v.innerHTML='<div class="card">Couldn\'t load your data ('+e(x.message||x)+').</div>'}}
 const sent=()=>JSON.parse(localStorage.sent||'{}');
-const sm=t=>D.summary&&D.summary[t]?`<div class="card"><h3 style="display:flex;justify-content:space-between;align-items:center">Summary<button class="spk" aria-label="Read aloud" onclick="spk(this,'${t}')">🔊</button></h3><p class="m" style="white-space:pre-wrap">${e(D.summary[t]).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</p></div>`:'';
+const sm=t=>D.summary&&D.summary[t]?`<div class="card"><h3 style="display:flex;justify-content:space-between;align-items:center">Summary<span><button class="spk" id="pp_${t}" aria-label="Play or pause" onclick="spk('${t}')">▶</button><button class="spk" aria-label="Stop" onclick="stp()">⏹</button></span></h3><p class="m" style="white-space:pre-wrap">${e(D.summary[t]).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</p></div>`:'';
 function draw(){document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.p==P));
 const hd=(t)=>`<h1>${t}</h1><div class="sub">Hey Nathan · updated ${dy(D.generated)} ${tm(D.generated)}</div>`;let h='';
 if(P=='today'){h=hd('Today')+sm('today');if(!D.today.length)h+='<div class="card">Quiet day so far ✨</div>';
@@ -44,8 +44,16 @@ function tog(i){const S=sent(),d=D.drafts[i],id=d.number+'|'+d.draft;S[id]?delet
 document.querySelectorAll('nav a').forEach(a=>a.onclick=ev=>{ev.preventDefault();P=localStorage.page=a.dataset.p;draw();scrollTo(0,0)});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');load();
 
-let SPK=null;function spk(b,t){const S=window.speechSynthesis;if(!S)return alert('Speech not supported');if(S.speaking||S.pending){S.cancel();const w=SPK===b;SPK&&(SPK.textContent='🔊');SPK=null;if(w)return}
-const txt=String(D.summary[t]).replace(/\*\*(.+?)\*\*/g,'$1').replace(/[*_#`>]/g,'').replace(/^\s*[-•]\s*/gm,'').replace(/\n+/g,'. ').replace(/\.\s*\./g,'.');
-const u=new SpeechSynthesisUtterance(txt);u.rate=1;u.lang='en-US';const v=S.getVoices().find(x=>x.lang==='en-US'&&/Samantha|Ava|Allison|Google US/i.test(x.name))||S.getVoices().find(x=>x.lang==='en-US');if(v)u.voice=v;
-const done=()=>{b.textContent='🔊';if(SPK===b)SPK=null};u.onend=done;u.onerror=done;b.textContent='⏹';SPK=b;S.speak(u)}
+let SP={t:null,q:[],i:0,paused:false},VO=null;
+function pickV(){const vs=speechSynthesis.getVoices().filter(v=>/^en[-_]US/i.test(v.lang));if(!vs.length)return null;const sc=v=>{const n=v.name;if(/Premium|Enhanced|Siri|Neural|Natural/i.test(n))return 0;const o=['Ava','Zoe','Evan','Samantha','Allison','Nicky'].findIndex(x=>n.includes(x));return o<0?99:1+o};return vs.sort((x,y)=>sc(x)-sc(y))[0]}
+if(window.speechSynthesis){VO=pickV();speechSynthesis.onvoiceschanged=()=>{VO=pickV()}}
+function setB(){document.querySelectorAll('[id^=pp_]').forEach(b=>{b.textContent=(SP.t&&b.id==='pp_'+SP.t&&!SP.paused)?'⏸':'▶'})}
+function clean(t){return String(t).replace(/\*\*(.+?)\*\*/g,'$1').replace(/[*_#`>]/g,'').replace(/^\s*[-•]\s*/gm,'').split(/\n+/).map(l=>l.trim()).filter(Boolean).map(l=>/[.!?:]$/.test(l)?l:l+'.').join(' ')}
+function sents(t){return (clean(t).match(/[^.!?]+[.!?]+["')]*|\S[^.!?]*$/g)||[]).map(x=>x.trim()).filter(Boolean)}
+function sayFrom(i){const S=speechSynthesis;SP.i=i;if(i>=SP.q.length){SP.t=null;setB();return}const u=new SpeechSynthesisUtterance(SP.q[i]);u.lang='en-US';u.rate=0.95;u.pitch=1;if(!VO)VO=pickV();if(VO)u.voice=VO;const tk=SP.tok;u.onend=()=>{if(tk===SP.tok&&!SP.paused)sayFrom(SP.i+1)};u.onerror=u.onend;S.speak(u)}
+function stp(){SP.tok={};speechSynthesis.cancel();SP.t=null;SP.paused=false;setB()}
+function spk(t){const S=window.speechSynthesis;if(!S)return alert('Speech not supported');
+if(SP.t===t&&!SP.paused){S.pause();SP.paused=true;setB();setTimeout(()=>{if(SP.paused&&!S.paused){SP.tok={};S.cancel()}},300);return}
+if(SP.t===t&&SP.paused){SP.paused=false;setB();if(S.paused&&S.speaking){S.resume();setTimeout(()=>{if(!SP.paused&&S.paused){SP.tok={};S.cancel();sayFrom(SP.i)}},400)}else{SP.tok={};S.cancel();sayFrom(SP.i)}return}
+stp();SP.t=t;SP.q=sents(D.summary[t]);SP.tok={};setB();sayFrom(0)}
 </script></body></html>
