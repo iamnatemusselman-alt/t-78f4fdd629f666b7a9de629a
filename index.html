@@ -29,11 +29,12 @@ const ck=await crypto.subtle.importKey('raw',b64(k),'AES-GCM',false,['decrypt'])
 D=JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:raw.slice(0,12)},ck,raw.slice(12))));draw()}
 catch(x){v.innerHTML='<div class="card">Couldn\'t load your data ('+e(x.message||x)+').</div>'}}
 const sent=()=>JSON.parse(localStorage.sent||'{}');
+const sm=t=>D.summary&&D.summary[t]?`<div class="card"><h3>Summary</h3><p class="m" style="white-space:pre-wrap">${e(D.summary[t]).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</p></div>`:'';
 function draw(){document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.p==P));
 const hd=(t)=>`<h1>${t}</h1><div class="sub">Hey Nathan · updated ${dy(D.generated)} ${tm(D.generated)}</div>`;let h='';
-if(P=='today'){h=hd('Today');if(!D.today.length)h+='<div class="card">Quiet day so far ✨</div>';
+if(P=='today'){h=hd('Today')+sm('today');if(!D.today.length)h+='<div class="card">Quiet day so far ✨</div>';
 D.today.forEach(c=>h+=`<div class="card"><h3>${e(c.chat)}</h3><div class="mono">${c.group?'Group · ':''}${c.count} messages today</div>${c.messages.map(m=>`<p class="m"><b>${e(m.from)}</b> <span class="mono">${tm(m.t)}</span><br>${e(m.text)}</p>`).join('')}</div>`)}
-if(P=='week'){h=hd('This Week')+'<h3>Things to remember</h3>';D.week.remember.slice().reverse().forEach(r=>h+=`<div class="card"><span class="tag t-${r.tag}">${r.tag}</span><span class="mono">${dy(r.t)} ${tm(r.t)} · ${e(r.chat)}</span><p class="m"><b>${e(r.from)}:</b> ${e(r.text)}</p></div>`);
+if(P=='week'){h=hd('This Week')+sm('week')+'<h3>Things to remember</h3>';D.week.remember.slice().reverse().forEach(r=>h+=`<div class="card"><span class="tag t-${r.tag}">${r.tag}</span><span class="mono">${dy(r.t)} ${tm(r.t)} · ${e(r.chat)}</span><p class="m"><b>${e(r.from)}:</b> ${e(r.text)}</p></div>`);
 h+='<h3 style="margin-top:22px">Most active conversations</h3>';D.week.chats.forEach(c=>h+=`<div class="card"><h3>${e(c.chat)}</h3><div class="mono">${c.count} messages this week</div>${c.highlights.map(m=>`<p class="m"><b>${e(m.from)}</b> <span class="mono">${dy(m.t)}</span> ${e(m.text)}</p>`).join('')}</div>`)}
 if(P=='drafts'){const S=sent();h=hd('Drafts');D.drafts.forEach((d,i)=>{const id=d.number+'|'+d.draft,dn=S[id];
 h+=`<div class="card ${dn?'done':''}"><h3>${dn?'✅ ':''}${e(d.name)}</h3><div class="mono">${e(d.number)}</div><p class="m">${e(d.summary)}</p><textarea id="t${i}">${e(d.draft)}</textarea><a class="btn" onclick="go(${i})">Open in Messages</a><button class="btn ghost" onclick="tog(${i})">${dn?'Sent ✓ (undo)':'Mark sent'}</button></div>`})}
