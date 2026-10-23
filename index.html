@@ -15,10 +15,9 @@ textarea{width:100%;min-height:76px;background:rgba(0,0,0,.3);color:#fff;border:
 .t-Family{background:#FF6FB533;color:#FF9ACB}.t-Plans{background:#3BA4FF33;color:#8CCBFF}.t-DJ\/Business{background:#7C5CFF33;color:#B7A6FF}.t-Group{background:#f5a62333;color:#ffc56b}
 nav{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 10px);display:flex;background:rgba(20,20,32,.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:22px}
 nav a{flex:1;text-align:center;padding:13px 0;color:#8a8aa0;text-decoration:none;font-weight:600}nav a.on{color:#fff;text-shadow:0 0 12px #7C5CFF}
-.spk{background:none;border:0;font-size:22px;cursor:pointer;padding:4px 8px}</style></head><body><div id="v"><p class="sub">Loading…</p></div>
-<nav><a href="#" data-p="today">Today</a><a href="#" data-p="week">Week</a><a href="#" data-p="drafts">Drafts</a></nav>
+</style></head><body><div id="v"><p class="sub">Loading…</p></div>
 <script>
-const KEYS='tk';let D,P=localStorage.page||'today';
+const KEYS='tk';let D;
 function key(){let m=location.hash.match(/k=([\w-]+)/);if(m){localStorage[KEYS]=m[1];return m[1]}return localStorage[KEYS]}
 const e=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const tm=t=>new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}),dy=t=>new Date(t).toLocaleDateString([],{weekday:'short'});
@@ -29,31 +28,13 @@ const ck=await crypto.subtle.importKey('raw',b64(k),'AES-GCM',false,['decrypt'])
 D=JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:raw.slice(0,12)},ck,raw.slice(12))));draw()}
 catch(x){v.innerHTML='<div class="card">Couldn\'t load your data ('+e(x.message||x)+').</div>'}}
 const sent=()=>JSON.parse(localStorage.sent||'{}');
-const sm=t=>D.summary&&D.summary[t]?`<div class="card"><h3 style="display:flex;justify-content:space-between;align-items:center">Summary<span><button class="spk" id="pp_${t}" aria-label="Play or pause" onclick="spk('${t}')">▶</button><button class="spk" aria-label="Stop" onclick="stp()">⏹</button></span></h3><p class="m" style="white-space:pre-wrap">${e(D.summary[t]).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</p></div>`:'';
-function draw(){document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.p==P));
+function draw(){
 const hd=(t)=>`<h1>${t}</h1><div class="sub">Hey Nathan · updated ${dy(D.generated)} ${tm(D.generated)}</div>`;let h='';
-if(P=='today'){h=hd('Today')+sm('today');if(!D.today.length)h+='<div class="card">Quiet day so far ✨</div>';
-D.today.forEach(c=>h+=`<div class="card"><h3>${e(c.chat)}</h3><div class="mono">${c.group?'Group · ':''}${c.count} messages today</div>${c.messages.map(m=>`<p class="m"><b>${e(m.from)}</b> <span class="mono">${tm(m.t)}</span><br>${e(m.text)}</p>`).join('')}</div>`)}
-if(P=='week'){h=hd('This Week')+sm('week')+'<h3>Things to remember</h3>';D.week.remember.slice().reverse().forEach(r=>h+=`<div class="card"><span class="tag t-${r.tag}">${r.tag}</span><span class="mono">${dy(r.t)} ${tm(r.t)} · ${e(r.chat)}</span><p class="m"><b>${e(r.from)}:</b> ${e(r.text)}</p></div>`);
-h+='<h3 style="margin-top:22px">Most active conversations</h3>';D.week.chats.forEach(c=>h+=`<div class="card"><h3>${e(c.chat)}</h3><div class="mono">${c.count} messages this week</div>${c.highlights.map(m=>`<p class="m"><b>${e(m.from)}</b> <span class="mono">${dy(m.t)}</span> ${e(m.text)}</p>`).join('')}</div>`)}
-if(P=='drafts'){const S=sent();h=hd('Drafts');D.drafts.forEach((d,i)=>{const id=d.number+'|'+d.draft,dn=S[id];
+{const S=sent();h=hd('Drafts');D.drafts.forEach((d,i)=>{const id=d.number+'|'+d.draft,dn=S[id];
 h+=`<div class="card ${dn?'done':''}"><h3>${dn?'✅ ':''}${e(d.name)}</h3><div class="mono">${e(d.number)}</div><p class="m">${e(d.summary)}</p><textarea id="t${i}">${e(d.draft)}</textarea><a class="btn" onclick="go(${i})">Open in Messages</a><button class="btn ghost" onclick="tog(${i})">${dn?'Sent ✓ (undo)':'Mark sent'}</button></div>`})}
 v.innerHTML=h}
 function go(i){location.href='sms:'+D.drafts[i].number+'&body='+encodeURIComponent(document.getElementById('t'+i).value)}
 function tog(i){const S=sent(),d=D.drafts[i],id=d.number+'|'+d.draft;S[id]?delete S[id]:S[id]=1;localStorage.sent=JSON.stringify(S);draw()}
-document.querySelectorAll('nav a').forEach(a=>a.onclick=ev=>{ev.preventDefault();P=localStorage.page=a.dataset.p;draw();scrollTo(0,0)});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');load();
 
-let SP={t:null,q:[],i:0,paused:false},VO=null;
-function pickV(){const vs=speechSynthesis.getVoices().filter(v=>/^en[-_]US/i.test(v.lang));if(!vs.length)return null;const sc=v=>{const n=v.name;if(/Premium|Enhanced|Siri|Neural|Natural/i.test(n))return 0;const o=['Ava','Zoe','Evan','Samantha','Allison','Nicky'].findIndex(x=>n.includes(x));return o<0?99:1+o};return vs.sort((x,y)=>sc(x)-sc(y))[0]}
-if(window.speechSynthesis){VO=pickV();speechSynthesis.onvoiceschanged=()=>{VO=pickV()}}
-function setB(){document.querySelectorAll('[id^=pp_]').forEach(b=>{b.textContent=(SP.t&&b.id==='pp_'+SP.t&&!SP.paused)?'⏸':'▶'})}
-function clean(t){return String(t).replace(/\*\*(.+?)\*\*/g,'$1').replace(/[*_#`>]/g,'').replace(/^\s*[-•]\s*/gm,'').split(/\n+/).map(l=>l.trim()).filter(Boolean).map(l=>/[.!?:]$/.test(l)?l:l+'.').join(' ')}
-function sents(t){return (clean(t).match(/[^.!?]+[.!?]+["')]*|\S[^.!?]*$/g)||[]).map(x=>x.trim()).filter(Boolean)}
-function sayFrom(i){const S=speechSynthesis;SP.i=i;if(i>=SP.q.length){SP.t=null;setB();return}const u=new SpeechSynthesisUtterance(SP.q[i]);u.lang='en-US';u.rate=0.95;u.pitch=1;if(!VO)VO=pickV();if(VO)u.voice=VO;const tk=SP.tok;u.onend=()=>{if(tk===SP.tok&&!SP.paused)sayFrom(SP.i+1)};u.onerror=u.onend;S.speak(u)}
-function stp(){SP.tok={};speechSynthesis.cancel();SP.t=null;SP.paused=false;setB()}
-function spk(t){const S=window.speechSynthesis;if(!S)return alert('Speech not supported');
-if(SP.t===t&&!SP.paused){S.pause();SP.paused=true;setB();setTimeout(()=>{if(SP.paused&&!S.paused){SP.tok={};S.cancel()}},300);return}
-if(SP.t===t&&SP.paused){SP.paused=false;setB();if(S.paused&&S.speaking){S.resume();setTimeout(()=>{if(!SP.paused&&S.paused){SP.tok={};S.cancel();sayFrom(SP.i)}},400)}else{SP.tok={};S.cancel();sayFrom(SP.i)}return}
-stp();SP.t=t;SP.q=sents(D.summary[t]);SP.tok={};setB();sayFrom(0)}
 </script></body></html>
