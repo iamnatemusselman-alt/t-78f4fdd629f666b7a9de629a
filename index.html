@@ -15,7 +15,7 @@ textarea{width:100%;min-height:76px;background:rgba(0,0,0,.3);color:#fff;border:
 .t-Family{background:#FF6FB533;color:#FF9ACB}.t-Plans{background:#3BA4FF33;color:#8CCBFF}.t-DJ\/Business{background:#7C5CFF33;color:#B7A6FF}.t-Group{background:#f5a62333;color:#ffc56b}
 nav{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 10px);display:flex;background:rgba(20,20,32,.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:22px}
 nav a{flex:1;text-align:center;padding:13px 0;color:#8a8aa0;text-decoration:none;font-weight:600}nav a.on{color:#fff;text-shadow:0 0 12px #7C5CFF}
-</style></head><body><div id="v"><p class="sub">Loading…</p></div>
+.spk{background:none;border:0;font-size:22px;cursor:pointer;padding:4px 8px}</style></head><body><div id="v"><p class="sub">Loading…</p></div>
 <nav><a href="#" data-p="today">Today</a><a href="#" data-p="week">Week</a><a href="#" data-p="drafts">Drafts</a></nav>
 <script>
 const KEYS='tk';let D,P=localStorage.page||'today';
@@ -29,7 +29,7 @@ const ck=await crypto.subtle.importKey('raw',b64(k),'AES-GCM',false,['decrypt'])
 D=JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:raw.slice(0,12)},ck,raw.slice(12))));draw()}
 catch(x){v.innerHTML='<div class="card">Couldn\'t load your data ('+e(x.message||x)+').</div>'}}
 const sent=()=>JSON.parse(localStorage.sent||'{}');
-const sm=t=>D.summary&&D.summary[t]?`<div class="card"><h3>Summary</h3><p class="m" style="white-space:pre-wrap">${e(D.summary[t]).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</p></div>`:'';
+const sm=t=>D.summary&&D.summary[t]?`<div class="card"><h3 style="display:flex;justify-content:space-between;align-items:center">Summary<button class="spk" aria-label="Read aloud" onclick="spk(this,'${t}')">🔊</button></h3><p class="m" style="white-space:pre-wrap">${e(D.summary[t]).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</p></div>`:'';
 function draw(){document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.p==P));
 const hd=(t)=>`<h1>${t}</h1><div class="sub">Hey Nathan · updated ${dy(D.generated)} ${tm(D.generated)}</div>`;let h='';
 if(P=='today'){h=hd('Today')+sm('today');if(!D.today.length)h+='<div class="card">Quiet day so far ✨</div>';
@@ -43,4 +43,9 @@ function go(i){location.href='sms:'+D.drafts[i].number+'&body='+encodeURICompone
 function tog(i){const S=sent(),d=D.drafts[i],id=d.number+'|'+d.draft;S[id]?delete S[id]:S[id]=1;localStorage.sent=JSON.stringify(S);draw()}
 document.querySelectorAll('nav a').forEach(a=>a.onclick=ev=>{ev.preventDefault();P=localStorage.page=a.dataset.p;draw();scrollTo(0,0)});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');load();
+
+let SPK=null;function spk(b,t){const S=window.speechSynthesis;if(!S)return alert('Speech not supported');if(S.speaking||S.pending){S.cancel();const w=SPK===b;SPK&&(SPK.textContent='🔊');SPK=null;if(w)return}
+const txt=String(D.summary[t]).replace(/\*\*(.+?)\*\*/g,'$1').replace(/[*_#`>]/g,'').replace(/^\s*[-•]\s*/gm,'').replace(/\n+/g,'. ').replace(/\.\s*\./g,'.');
+const u=new SpeechSynthesisUtterance(txt);u.rate=1;u.lang='en-US';const v=S.getVoices().find(x=>x.lang==='en-US'&&/Samantha|Ava|Allison|Google US/i.test(x.name))||S.getVoices().find(x=>x.lang==='en-US');if(v)u.voice=v;
+const done=()=>{b.textContent='🔊';if(SPK===b)SPK=null};u.onend=done;u.onerror=done;b.textContent='⏹';SPK=b;S.speak(u)}
 </script></body></html>
