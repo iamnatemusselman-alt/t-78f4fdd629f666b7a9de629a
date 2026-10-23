@@ -1,0 +1,45 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><meta name="theme-color" content="#0B0B12">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Texts">
+<link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon.png"><title>Texts</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0B0B12;color:#fff;font:15px/1.45 Inter,-apple-system,sans-serif;padding:calc(env(safe-area-inset-top) + 14px) 16px 110px}
+body:before{content:"";position:fixed;inset:-20%;z-index:-1;background:radial-gradient(40% 30% at 15% 10%,#7C5CFF55,transparent),radial-gradient(40% 30% at 90% 30%,#3BA4FF44,transparent),radial-gradient(35% 25% at 50% 95%,#FF6FB533,transparent)}
+h1{font-size:30px;font-weight:800;letter-spacing:-.5px;margin:4px 0}.sub{color:#B8B8C8;font-size:13px;margin-bottom:14px}
+.card{background:rgba(255,255,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:14px 16px;margin:12px 0}
+.card h3{margin:0 0 4px;font-size:16px}.mono{font-family:ui-monospace,monospace;font-size:12px;color:#8a8aa0}.m{color:#B8B8C8;margin:6px 0}.m b{color:#fff;font-weight:600}
+textarea{width:100%;min-height:76px;background:rgba(0,0,0,.3);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;font:inherit}
+.btn{display:inline-block;border:0;border-radius:12px;padding:10px 14px;font:600 15px Inter,sans-serif;color:#fff;background:linear-gradient(90deg,#7C5CFF,#3BA4FF);margin:8px 8px 0 0}.ghost{background:rgba(255,255,255,.1)}
+.done{opacity:.45}.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;margin-right:6px}
+.t-Family{background:#FF6FB533;color:#FF9ACB}.t-Plans{background:#3BA4FF33;color:#8CCBFF}.t-DJ\/Business{background:#7C5CFF33;color:#B7A6FF}.t-Group{background:#f5a62333;color:#ffc56b}
+nav{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 10px);display:flex;background:rgba(20,20,32,.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:22px}
+nav a{flex:1;text-align:center;padding:13px 0;color:#8a8aa0;text-decoration:none;font-weight:600}nav a.on{color:#fff;text-shadow:0 0 12px #7C5CFF}
+</style></head><body><div id="v"><p class="sub">Loading…</p></div>
+<nav><a href="#" data-p="today">Today</a><a href="#" data-p="week">Week</a><a href="#" data-p="drafts">Drafts</a></nav>
+<script>
+const KEYS='tk';let D,P=localStorage.page||'today';
+function key(){let m=location.hash.match(/k=([\w-]+)/);if(m){localStorage[KEYS]=m[1];return m[1]}return localStorage[KEYS]}
+const e=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const tm=t=>new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}),dy=t=>new Date(t).toLocaleDateString([],{weekday:'short'});
+async function load(){const k=key();if(!k){v.innerHTML='<div class="card">Open this app from your private link once to unlock it.</div>';return}
+const b64=s=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')+'=='.slice(0,(4-s.length%4)%4)),c=>c.charCodeAt(0));
+try{const r=await fetch('data.enc?'+Date.now(),{cache:'no-store'});const raw=b64((await r.text()).trim());
+const ck=await crypto.subtle.importKey('raw',b64(k),'AES-GCM',false,['decrypt']);
+D=JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:raw.slice(0,12)},ck,raw.slice(12))));draw()}
+catch(x){v.innerHTML='<div class="card">Couldn\'t load your data ('+e(x.message||x)+').</div>'}}
+const sent=()=>JSON.parse(localStorage.sent||'{}');
+function draw(){document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.p==P));
+const hd=(t)=>`<h1>${t}</h1><div class="sub">Hey Nathan · updated ${dy(D.generated)} ${tm(D.generated)}</div>`;let h='';
+if(P=='today'){h=hd('Today');if(!D.today.length)h+='<div class="card">Quiet day so far ✨</div>';
+D.today.forEach(c=>h+=`<div class="card"><h3>${e(c.chat)}</h3><div class="mono">${c.group?'Group · ':''}${c.count} messages today</div>${c.messages.map(m=>`<p class="m"><b>${e(m.from)}</b> <span class="mono">${tm(m.t)}</span><br>${e(m.text)}</p>`).join('')}</div>`)}
+if(P=='week'){h=hd('This Week')+'<h3>Things to remember</h3>';D.week.remember.slice().reverse().forEach(r=>h+=`<div class="card"><span class="tag t-${r.tag}">${r.tag}</span><span class="mono">${dy(r.t)} ${tm(r.t)} · ${e(r.chat)}</span><p class="m"><b>${e(r.from)}:</b> ${e(r.text)}</p></div>`);
+h+='<h3 style="margin-top:22px">Most active conversations</h3>';D.week.chats.forEach(c=>h+=`<div class="card"><h3>${e(c.chat)}</h3><div class="mono">${c.count} messages this week</div>${c.highlights.map(m=>`<p class="m"><b>${e(m.from)}</b> <span class="mono">${dy(m.t)}</span> ${e(m.text)}</p>`).join('')}</div>`)}
+if(P=='drafts'){const S=sent();h=hd('Drafts');D.drafts.forEach((d,i)=>{const id=d.number+'|'+d.draft,dn=S[id];
+h+=`<div class="card ${dn?'done':''}"><h3>${dn?'✅ ':''}${e(d.name)}</h3><div class="mono">${e(d.number)}</div><p class="m">${e(d.summary)}</p><textarea id="t${i}">${e(d.draft)}</textarea><a class="btn" onclick="go(${i})">Open in Messages</a><button class="btn ghost" onclick="tog(${i})">${dn?'Sent ✓ (undo)':'Mark sent'}</button></div>`})}
+v.innerHTML=h}
+function go(i){location.href='sms:'+D.drafts[i].number+'&body='+encodeURIComponent(document.getElementById('t'+i).value)}
+function tog(i){const S=sent(),d=D.drafts[i],id=d.number+'|'+d.draft;S[id]?delete S[id]:S[id]=1;localStorage.sent=JSON.stringify(S);draw()}
+document.querySelectorAll('nav a').forEach(a=>a.onclick=ev=>{ev.preventDefault();P=localStorage.page=a.dataset.p;draw();scrollTo(0,0)});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');load();
+</script></body></html>
